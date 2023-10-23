@@ -149,64 +149,105 @@ def data_to_buffer(image, extension="JPEG"):
     return buffer
 
 
+
+
+
 def main_loop():
-    st.title("EL TRABAJITO")
-    
-    st.text("Instrucciones: primero arrastrar las imagenes a la zona inferior y a continuación pulsar el botón de descarga del zip.")
-    st.text("Cualquier detalle consulte con mi secretario Bertin.")
-    st.text("Que disfrutes!")
+	st.title("EL TRABAJITO")
 
-    files_list = st.file_uploader("Upload your images/s", type = ["jpg", "png", "jpeg"], accept_multiple_files=True)
+	st.text("Instrucciones: primero arrastrar las imagenes a la zona inferior y a continuación pulsar el botón de descarga del zip.")
+	st.text("Cualquier detalle consulte con mi secretario Bertin.")
+	st.text("Que disfrutes!")
 
-    if not files_list:
-        print("Error")
-        return None 
+	# read file uploaded and reset uploader field
+	files_list=None
 
-    st.text("___________________________________________________")
-    
-    st.text("Comenzando procesamiento de imagenes...")
-    # Iniciando image procesor
-    img_processor = ProcessImageFile()
+	with st.form("my_form", clear_on_submit=True):
+		files_list = st.file_uploader("Upload your images/s", type = ["jpg", "png", "jpeg"], accept_multiple_files=True)
+		
 
-    with ZipFile("output.zip", "w") as zip_object:
-        for file in files_list:
-            clean_name = file.name.split(".")[0]
+		zip_name = st.text_input("Nombre de la carpeta a descargar: ", "default.zip")
 
-            st.text(f"Procesando imagen: {clean_name}")
+		st.text("Pulsa para empezar o presiona Enter (en el nombre):")
 
-            # load file as image and convert it to array
-            file_img = Image.open(file)
-            file_img = np.array(file_img)
+		submitted=st.form_submit_button("Hit me, daddy!")
 
-            # create image file object and processed it
-            img_obj = ImageFile(clean_name, file_img)
-            img_obj.image_processed = img_processor.process_image(img_obj)
+	if not files_list:
+		return
+	
+	if  not submitted:
+		return
+	
+	# if user hits submit
+	st.text("___________________________________________________")
 
-            # resize half the size
-            #img_obj.image_processed = cv2.resize(img_obj.image_processed, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+	st.text(f"Comenzando el procesamiento de {len(files_list)} imagenes...")
+	# Iniciando image procesor
+	img_processor = ProcessImageFile()
 
-            # Create Image Bytes Object
-            img_obj.image_bytes = data_to_buffer(img_obj.image_processed).getvalue() 
+	counter = st.text(f"Procesados 0 / {len(files_list)}")
+	with ZipFile("output.zip", "w") as zip_object:
+		for index, file in enumerate(files_list):
+			clean_name = file.name.split(".")[0]
 
-            
-            zip_object.writestr(img_obj.get_name() + img_obj.image_extension, img_obj.get_image_bytes())
+			#st.text(f"Procesando imagen: {clean_name}")
+			counter.text(f"Procesados => {index + 1} / {len(files_list)}")
+			# load file as image and convert it to array
+			file_img = Image.open(file)
+			file_img = np.array(file_img)
 
-    st.text("Finalizando procesamiento de imagenes...")
+			# create image file object and processed it
+			img_obj = ImageFile(clean_name, file_img)
+			img_obj.image_processed = img_processor.process_image(img_obj)
 
-    st.text("___________________________________________________")
-    st.text("Pulsa para descargar el zip con los archivos procesados")
-    with open("output.zip", "rb") as zip_object:
-        
-        btn = st.download_button (
-            label="Download zip",
-            data=zip_object,
-            file_name="output.zip",
-            mime="application/zip"
-        )
+			# resize half the size
+			#img_obj.image_processed = cv2.resize(img_obj.image_processed, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
 
-    st.text("___________________________________________________")
-    st.text("Muestra de la labor realizada...")
-    st.image([img_obj.get_image(), img_obj.image_processed])  
+			# Create Image Bytes Object
+			img_obj.image_bytes = data_to_buffer(img_obj.image_processed).getvalue() 
+
+			
+			zip_object.writestr(img_obj.get_name() + img_obj.image_extension, img_obj.get_image_bytes())
+
+			
+
+		st.text("Finalizando procesamiento de imagenes...")
+
+		st.text("___________________________________________________")
+
+		
+
+		if(zip_name != "" or zip_name != " "):
+			split_name = zip_name.split(".")
+			zip_name = split_name[0] + ".zip"
+		else:
+			zip_name = "default.zip"
+
+		#zip_name = "output.zip"
+
+		st.text(f"{zip_name}")
+
+		st.text("Pulsa el siguiente botón para descargar el zip con los archivos procesados")
+		with open("output.zip", "rb") as zip_object:
+			
+			btn = st.download_button (
+				label="Download zip",
+				data=zip_object,
+				file_name=zip_name,
+				mime="application/zip"
+			)
+
+			if(btn is not None):
+				files_list = None
+				submitted = None
+
+		
+
+		st.text("___________________________________________________")
+		st.text("Muestra de la labor realizada...")
+		st.image([img_obj.get_image(), img_obj.image_processed])  
+
+		
 
 
 
